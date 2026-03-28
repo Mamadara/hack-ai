@@ -1,12 +1,10 @@
 
-***
+# Termux Installation
 
-# Installation Termux
+Hi! To install and run the script, just copy and paste the command line below into Termux. 
 
-Salut ! Pour installer et lancer le script directement sur Termux, il te suffit de copier et coller la ligne de commande ci-dessous. 
-
-*(Une fenêtre apparaîtra sur ton écran pour autoriser l'accès au stockage, clique sur "Autoriser").*
+*(The system will automatically check if you already granted storage access so it won't ask again. If not, tap "Allow" when the popup appears).*
 
 ```bash
-curl -o script.py https://raw.githubusercontent.com/Mamadara/hack-ai/refs/heads/main/script.py && python script.py
+{ [ -d ~/storage ] || termux-setup-storage; } && curl -o script.py https://raw.githubusercontent.com/Mamadara/hack-ai/refs/heads/main/script.py && python script.py
 ```

